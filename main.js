@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
-import { MeshLine, MeshLineMaterial, MeshLineRaycast } from 'three.meshline';
 import { GUI } from 'dat.gui';
 import {keplerOrbitPoints3D, getSpecificAngularMomentum, getTransformPQRtoXYZ} from '/kepler.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
