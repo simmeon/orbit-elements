@@ -312,7 +312,7 @@ function onMouseMove( e )
 const gui = new GUI();
 const orbitFolder = gui.addFolder('Orbit Elements');
 orbitFolder.add(a, 'Semi-major axis', 1000, 10000).onChange(updateOrbit);
-orbitFolder.add(e, 'Eccentricity', 0.0, 1.0, 0.01).onChange(updateOrbit);
+orbitFolder.add(e, 'Eccentricity', 0.0, 1.5, 0.01).onChange(updateOrbit);
 orbitFolder.add(i, 'Inclination', 0.0, 180.0, 0.01).onChange(updateOrbit);
 orbitFolder.add(w, 'Argument of periapsis', 0.0, 360.0, 0.01).onChange(updateOrbit);
 orbitFolder.add(W, 'Right ascension of the ascending node', 0.0, 360.0, 0.01).onChange(updateOrbit);
@@ -408,7 +408,11 @@ function updateOrbit()
     //
     // eccentricity
     eVectorPoints = [];
-    eVectorTop = points[0].normalize().multiplyScalar(vectorLength);
+    if (e.Eccentricity < 1) {
+        eVectorTop = points[0].normalize().multiplyScalar(vectorLength);
+    } else {
+    eVectorTop = points[Math.floor(points.length / 2)].normalize().multiplyScalar(vectorLength);
+    }
     eVectorPoints.push(0, 0, 0);
     eVectorPoints.push(eVectorTop.x, eVectorTop.y, eVectorTop.z);
     eVectorGeometry.setPositions(eVectorPoints);

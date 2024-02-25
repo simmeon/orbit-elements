@@ -47,7 +47,7 @@ export function keplerOrbitPoints3D(a, e, i=0, w=0, W=0, mu=398600.4415, dt=10, 
     const n = Math.sqrt(mu/a**3);        // mean motion [rad/s]
     const T = 2*Math.PI*Math.sqrt(a**3/mu);   // period [s]
 
-    // Solve Kepler's equation: M = E - esinE
+    // Solve Kepler's equation: M = E - esinE or M = esinH - H
 
     const pointsPQR = [];  // p,q,r points on orbit
     const pointsXYZ = [];  // x,y,z points on orbit
@@ -57,22 +57,45 @@ export function keplerOrbitPoints3D(a, e, i=0, w=0, W=0, mu=398600.4415, dt=10, 
     let M = 0;
     let error = 1;
     let previousE = 0;
+    let previousH = 0;
     let E = M;  // inital choice of E
+    let H = M; // initial choice of hyperbolic anomaly
 
-    for (let t = 0; t <= T; t += dt) {
 
-        M = n * t;  // mean anomaly [rad]
-        error = 1;  // large initial error in E solution
+    if (e < 1.0) {
+        // Solve for e < 1, elliptical
+        for (let t = 0; t <= T; t += dt) {
 
-        while (error > tol) {
-            previousE = E;
-            E = E + (M - E + e * Math.sin(E)) / (1 - e * Math.cos(E));
-            error = Math.abs(previousE - E);
+            M = n * t;  // mean anomaly [rad]
+            error = 1;  // large initial error in E solution
+
+            while (error > tol) {
+                previousE = E;
+                E = E + (M - E + e * Math.sin(E)) / (1 - e * Math.cos(E));
+                error = Math.abs(previousE - E);
+            }
+            f = 2 * Math.atan(Math.sqrt((1+e)/(1-e))*Math.tan(E/2));  // Solve found E for true anomaly, f
+            rMagnitude = (h * h / mu) / (1 + e * Math.cos(f));
+            pointsPQR.push( new THREE.Vector3(rMagnitude * Math.cos(f), rMagnitude * Math.sin(f), 0) );
         }
-        f = 2 * Math.atan(Math.sqrt((1+e)/(1-e))*Math.tan(E/2));  // Solve found E for true anomaly, f
-        rMagnitude = (h * h / mu) / (1 + e * Math.cos(f));
-        pointsPQR.push( new THREE.Vector3(rMagnitude * Math.cos(f), rMagnitude * Math.sin(f), 0) );
-    }
+    } else {
+        // Solve for e > 1, hyperbolic
+        for (let t = -T/4; t <= T/4; t += dt) {
+
+            M = n * t;  // mean anomaly [rad]
+            error = 1;  // large initial error in E solution
+
+            while (error > tol) {
+                previousH = H;
+                H = H - (e * Math.sinh(H) - H - M) / (e * Math.cosh(H) - 1);
+                error = Math.abs(previousH - H);
+            }
+            f = 2 * Math.atan(Math.sqrt((e+1)/(e-1))*Math.tanh(H/2));  // Solve found H for true anomaly, f
+            rMagnitude = (a * (e**2 - 1)) / (1 + e * Math.cos(f));
+            pointsPQR.push( new THREE.Vector3(rMagnitude * Math.cos(f), rMagnitude * Math.sin(f), 0) );
+        }
+    } 
+
 
     // Transform points to 3D based on orbital elements
     let T_pqw_xyz = R3(-deg2rad(W));
@@ -98,6 +121,10 @@ export function keplerOrbitPoints3D(a, e, i=0, w=0, W=0, mu=398600.4415, dt=10, 
 export function getSpecificAngularMomentum (a, e, i, w, W, mu=398600.4415)
 {
     let hMatrix = new THREE.Matrix3();
+
+    if (e > 1) {
+        a = -a;
+    }
 
     hMatrix.set(0, 0, 0,
                 0, 0, 0,
